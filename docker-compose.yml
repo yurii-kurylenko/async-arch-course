@@ -1,0 +1,36 @@
+version: "3.4"
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        RUBY_VERSION: "3.0.0"
+        RAILS_VERSION: "6.1.1"
+        PG_MAJOR: "13"
+        NODE_MAJOR: "14"
+    tmpfs:
+      - /workspace/tmp
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/workspace
+      - rails_cache:/workspace/tmp/cache
+      - bundle:/bundle
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    command: bundle exec rails server -b 0.0.0.0
+
+  db:
+    image: postgres:13
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+
+volumes:
+  dbdata:
+  bundle:
+  rails_cache:
