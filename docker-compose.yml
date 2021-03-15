@@ -1,27 +1,43 @@
 version: "3.4"
 
+x-base: &base
+  build:
+    context: .
+    dockerfile: .dockerdev/Dockerfile
+    args:
+      RUBY_VERSION: "3.0.0"
+      RAILS_VERSION: "6.1.1"
+      PG_MAJOR: "13"
+      NODE_MAJOR: "14"
+  stdin_open: true
+  tty: true
+  command: bundle exec rails server -b 0.0.0.0
+  tmpfs:
+    - /workspace/tmp
+  depends_on:
+    - db
+    - mailer
+
 services:
-  app:
-    build:
-      context: .
-      args:
-        RUBY_VERSION: "3.0.0"
-        RAILS_VERSION: "6.1.1"
-        PG_MAJOR: "13"
-        NODE_MAJOR: "14"
-    tmpfs:
-      - /workspace/tmp
-    stdin_open: true
-    tty: true
+  todo:
+    <<: *base
     volumes:
-      - .:/workspace
-      - rails_cache:/workspace/tmp/cache
-      - bundle:/bundle
-    depends_on:
-      - db
+      - ./todo:/workspace
+      - rails_cache_todo:/workspace/tmp/cache
+      - bundle_todo:/bundle
+      - node_modules_todo:/workspace/node_modules
+    ports:
+      - "3001:3000"
+
+  auth:
+    <<: *base
+    volumes:
+      - ./auth:/workspace
+      - rails_cache_auth:/workspace/tmp/cache
+      - bundle_auth:/bundle
+      - node_modules_auth:/workspace/node_modules
     ports:
       - "3000:3000"
-    command: bundle exec rails server -b 0.0.0.0
 
   db:
     image: postgres:13
@@ -30,7 +46,26 @@ services:
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
 
+  mailer:
+    image: drujensen/mailcatcher:latest
+    ports:
+      - 1025
+      - ${MAIL_WEB_PORT:-1080:1080}
+
+  proxy:
+    image: nginx:latest
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - auth
+
 volumes:
   dbdata:
-  bundle:
-  rails_cache:
+  bundle_todo:
+  bundle_auth:
+  rails_cache_todo:
+  rails_cache_auth:
+  node_modules_auth:
+  node_modules_todo:

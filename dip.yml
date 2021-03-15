@@ -1,0 +1,61 @@
+version: "4.2"
+
+compose:
+  files:
+    - docker-compose.yml
+  project_name: async-arch-course
+
+interaction:
+  todo:
+    service: todo
+    compose:
+      run_options: [service-ports, use-aliases]
+    subcommands:
+      bash:
+        command: bash
+        compose:
+          run_options: [no-deps]
+      bundle:
+        command: bundle
+        compose:
+          run_options: [service-ports, use-aliases]
+      rails:
+        command: rails
+        compose:
+          run_options: [service-ports, use-aliases]
+
+  auth:
+    service: auth
+    compose:
+      run_options: [service-ports, use-aliases]
+    subcommands:
+      bash:
+        command: bash
+        compose:
+          run_options: [no-deps]
+      bundle:
+        command: bundle
+        compose:
+          run_options: [service-ports, use-aliases]
+      rails:
+        command: rails
+        compose:
+          run_options: [service-ports, use-aliases]
+
+  db:
+    service: db
+    subcommands:
+      bash:
+        command: bash
+      psql:
+        command: psql -h db -U postgres -d postgres
+    compose:
+      run_options: [use-aliases]
+
+provision:
+  - dip down --volumes
+  - dip compose up -d db
+  - dip todo bundle install
+  - dip auth bundle install
+  - dip todo rails db:setup
+  - dip auth rails db:setup
